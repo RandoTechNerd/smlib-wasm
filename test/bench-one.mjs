@@ -30,6 +30,12 @@ export const MODELS = {
     return p;`,
   "mini Snapmaker U1": readFileSync(path.join(BREPCODE, "examples", "snapmaker-u1.js"), "utf8"),
 };
+// Most of the Snapmaker's time is not the kernel's: each chamfer that picks
+// its own edges makes BREPcode's compile() replay the history so far on the
+// JS kernel, which takes ~20 s over the exact "snapmaker" lettering. Without
+// its two chamfers the build is the kernel's own work.
+MODELS["mini Snapmaker U1, chamfers left off"] = MODELS["mini Snapmaker U1"]
+  .replace("chamfer(1.5,", "group(").replace("chamfer(1, union(", "group(union(");
 
 function volumeOf(res) {
   let vol = 0, tris = 0;

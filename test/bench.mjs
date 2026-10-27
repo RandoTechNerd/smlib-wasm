@@ -32,7 +32,7 @@ const one = (kernel) => {
   const line = r.stdout.trim().split(/\r?\n/).at(-1);
   try { return JSON.parse(line); } catch { return { kernel, error: (r.stdout + r.stderr).slice(-800) }; }
 };
-const results = ["native", "wasm", "rust"].map(one);
+const results = (process.env.KERNELS || "native,wasm,rust").split(",").map(one);
 console.log("\nload: " + results.map((r) => `${r.kernel} ${r.loadMs?.toFixed(0)} ms`).join(", "));
 const labels = Object.keys(results.find((r) => r.models)?.models || {});
 for (const r of results) if (r.error) console.log(`\n${r.kernel} failed:\n${r.error}`);

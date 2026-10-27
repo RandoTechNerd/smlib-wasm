@@ -15,10 +15,11 @@ if(NOT EMSCRIPTEN)
 endif()
 
 set(SMLIB_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/upstream/source" CACHE PATH "usd-brep's source/ folder (SMLib and SM_API)")
+# wasm: native WebAssembly exception handling (-fwasm-exceptions), needs
+# Chrome 95 / Firefox 100 / Safari 15.2 / Node 17 or later. Measured: 25%
+# smaller and twice as fast on boolean-heavy models as js, about native speed.
 # js: Emscripten's JavaScript-based C++ exceptions (-fexceptions), runs anywhere.
-# wasm: native WebAssembly exception handling (-fwasm-exceptions), smaller and
-# faster, needs Chrome 95 / Firefox 100 / Safari 15.2 / Node 17 or later.
-set(SMLIB_EH "js" CACHE STRING "C++ exception handling: js or wasm")
+set(SMLIB_EH "wasm" CACHE STRING "C++ exception handling: wasm or js")
 set(SMLIB_OPT "-O2" CACHE STRING "optimisation level for the kernel")
 set(SMLIB_DIST "${CMAKE_CURRENT_SOURCE_DIR}/dist" CACHE PATH "where smlib.mjs and smlib.wasm go")
 

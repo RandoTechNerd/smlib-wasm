@@ -1,6 +1,6 @@
 // Builds dist/smlib.mjs + dist/smlib.wasm with Emscripten.
 //
-//   node build.mjs [--eh js|wasm] [--opt -O2] [--out build] [--dist dist]
+//   node build.mjs [--eh wasm|js] [--opt -O2] [--out build] [--dist dist]
 //
 // Finds the SDK at $EMSDK, else ../.toolchain/emsdk next to this folder, and
 // sets up its environment itself (no emsdk_env needed). Needs CMake and Ninja.
@@ -15,7 +15,7 @@ const arg = (name, dflt) => {
   const i = process.argv.indexOf(name);
   return i > 0 ? process.argv[i + 1] : dflt;
 };
-const eh = arg("--eh", "js");
+const eh = arg("--eh", "wasm");
 const opt = arg("--opt", "-O2");
 const out = path.resolve(here, arg("--out", "build"));
 const dist = path.resolve(here, arg("--dist", "dist"));
