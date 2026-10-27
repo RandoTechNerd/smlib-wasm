@@ -1,0 +1,23 @@
+{
+  "name": "smlib-wasm",
+  "version": "0.1.0",
+  "description": "The SMLib B-rep kernel, based on NVIDIA's open-source usd-brep, compiled to WebAssembly",
+  "license": "Apache-2.0",
+  "private": true,
+  "type": "module",
+  "main": "src/api.mjs",
+  "exports": {
+    ".": "./src/api.mjs"
+  },
+  "files": ["src/api.mjs", "dist/", "LICENSE", "THIRD_PARTY_NOTICES.md"],
+  "scripts": {
+    "fetch": "node fetch-upstream.mjs",
+    "build": "node build.mjs",
+    "test": "node test/smoke.mjs",
+    "compare": "node test/compare.mjs",
+    "bench": "node test/bench.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
