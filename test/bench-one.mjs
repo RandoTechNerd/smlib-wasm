@@ -1,20 +1,30 @@
 // One kernel, in this process; prints one JSON line (test/bench.mjs drives it).
 //   node [--import ./test/use-wasm.mjs] test/bench-one.mjs native|wasm|rust
 import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import path from "node:path";
 import { BREPCODE, at } from "./brepcode.mjs";
 
 const kernel = process.argv[2];
-const dsl = await import(at("src/dsl.js"));
 const { build } = await import(at("index.js"));
 const loaders = await import(at("src/engine-node.js"));
 
-const names = Object.keys(dsl).filter((k) => typeof dsl[k] === "function" && k !== "compile");
-const shape = (src) => new Function(...names, `"use strict";\n${src}`)(...names.map((n) => dsl[n]));
+// editor code run as the editor runs it (a const may shadow a DSL word), with
+// text() as exact glyph outlines from the editor's own font, as in the app
+const { runEditorCode } = await import(at("src/runcode.js"));
+const dsl = await import(at("src/dsl.js"));
+const { exactText } = await import(at("src/textexact.js"));
+const ot = createRequire(import.meta.url)(path.join(BREPCODE, "node_modules", "opentype.js", "dist", "opentype.js"));
+const fontBuf = readFileSync(path.join(BREPCODE, "viewer", "fonts", "Roboto-Bold.woff"));
+const font = ot.parse(fontBuf.buffer.slice(fontBuf.byteOffset, fontBuf.byteOffset + fontBuf.byteLength));
+const vocab = { ...dsl, text: (o) => exactText(font, String(o.text), o) };
+const shape = (src) => runEditorCode(src, vocab).shape;
 
 export const MODELS = {
   "twisted square": "return linearExtrude({ h: 40, twist: 90 }, polygon([[-10, -10], [10, -10], [10, 10], [-10, 10]]));",
-  "chamfered union": `return chamfer({ d: 1, edges: "top" }, union(cube([20, 20, 10]), translate([10, 10, 0], cube([20, 20, 10]))));`,
+  // BREPcode's test/nvidia.js: a union, then a chamfer on an edge picked by name
+  "chamfered union": `return chamfer({ d: 1, edges: ["R4:L100_END|R4:L100_START[0]"] }, union(cube(20), translate([30, 0, 0], revolve({ angle: 270 }, polygon([[0, 0], [8, 0], [8, 10], [0, 10]])))));`,
+  "chamfered box with a boss": `return chamfer({ d: 1, edges: "top" }, union(cube([20, 20, 10]), translate([10, 10, 0], cylinder({ r: 4, h: 16 }))));`,
   "plate, 12 x 12 holes": `let p = cube([130, 130, 4]);
     for (let i = 0; i < 12; i++) for (let j = 0; j < 12; j++) p = difference(p, translate([10 + 10 * i, 10 + 10 * j, -1], cylinder({ r: 3, h: 6 })));
     return p;`,
@@ -60,3 +70,4 @@ for (const [label, src] of Object.entries(MODELS)) {
 }
 out.rssMB = process.memoryUsage().rss / 1048576;
 console.log(JSON.stringify(out));
+process.exit(0); // BREPcode leaves a handle open; without this the run never ends

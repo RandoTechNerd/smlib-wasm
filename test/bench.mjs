@@ -5,7 +5,7 @@ import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { brotliCompressSync, gzipSync, constants } from "node:zlib";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { BREPCODE } from "./brepcode.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -27,7 +27,7 @@ for (const [k, f] of Object.entries(files)) {
 }
 
 const one = (kernel) => {
-  const pre = kernel === "wasm" ? ["--import", path.join(here, "use-wasm.mjs")] : [];
+  const pre = kernel === "wasm" ? ["--import", pathToFileURL(path.join(here, "use-wasm.mjs")).href] : [];
   const r = spawnSync(process.execPath, [...pre, path.join(here, "bench-one.mjs"), kernel], { cwd: BREPCODE, encoding: "utf8", maxBuffer: 1 << 26 });
   const line = r.stdout.trim().split(/\r?\n/).at(-1);
   try { return JSON.parse(line); } catch { return { kernel, error: (r.stdout + r.stderr).slice(-800) }; }

@@ -20,6 +20,7 @@ set(SMLIB_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/upstream/source" CACHE PATH "usd-b
 # faster, needs Chrome 95 / Firefox 100 / Safari 15.2 / Node 17 or later.
 set(SMLIB_EH "js" CACHE STRING "C++ exception handling: js or wasm")
 set(SMLIB_OPT "-O2" CACHE STRING "optimisation level for the kernel")
+set(SMLIB_DIST "${CMAKE_CURRENT_SOURCE_DIR}/dist" CACHE PATH "where smlib.mjs and smlib.wasm go")
 
 if(SMLIB_EH STREQUAL "wasm")
   set(EH_FLAGS -fwasm-exceptions)
@@ -60,7 +61,7 @@ target_link_libraries(smlib_wasm PRIVATE smapi smlib)
 set_target_properties(smlib_wasm PROPERTIES
   OUTPUT_NAME smlib
   SUFFIX ".mjs"
-  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/dist")
+  RUNTIME_OUTPUT_DIRECTORY "${SMLIB_DIST}")
 target_link_options(smlib_wasm PRIVATE
   ${SMLIB_OPT} ${EH_FLAGS}
   -lembind

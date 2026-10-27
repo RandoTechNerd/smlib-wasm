@@ -3,7 +3,7 @@
 //   node test/compare.mjs [--full]
 import { spawnSync } from "node:child_process";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { BREPCODE } from "./brepcode.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -14,7 +14,7 @@ const run = (pre) => {
   return { out: (r.stdout + r.stderr).split(/\r?\n/).filter((l) => l.trim()), code: r.status, s: (Date.now() - t0) / 1000 };
 };
 const native = run([]);
-const wasm = run(["--import", path.join(here, "use-wasm.mjs")]);
+const wasm = run(["--import", pathToFileURL(path.join(here, "use-wasm.mjs")).href]);
 const count = (lines, w) => lines.filter((l) => l.trim().startsWith(w)).length;
 for (const [name, r] of [["native", native], ["wasm", wasm]]) {
   console.log(`${name.padEnd(6)}  ${count(r.out, "PASS")} pass, ${count(r.out, "FAIL")} fail, exit ${r.code}, ${r.s.toFixed(1)} s`);

@@ -1,6 +1,6 @@
 // Builds dist/smlib.mjs + dist/smlib.wasm with Emscripten.
 //
-//   node build.mjs [--eh js|wasm] [--opt -O2] [--out build]
+//   node build.mjs [--eh js|wasm] [--opt -O2] [--out build] [--dist dist]
 //
 // Finds the SDK at $EMSDK, else ../.toolchain/emsdk next to this folder, and
 // sets up its environment itself (no emsdk_env needed). Needs CMake and Ninja.
@@ -18,6 +18,7 @@ const arg = (name, dflt) => {
 const eh = arg("--eh", "js");
 const opt = arg("--opt", "-O2");
 const out = path.resolve(here, arg("--out", "build"));
+const dist = path.resolve(here, arg("--dist", "dist"));
 
 const emsdk = process.env.EMSDK || path.resolve(here, "..", ".toolchain", "emsdk");
 const emscripten = path.join(emsdk, "upstream", "emscripten");
@@ -42,6 +43,7 @@ env.PATH = [...extra, process.env.PATH].join(path.delimiter);
 
 const run = (cmd, args) => {
   console.log(`> ${cmd} ${args.join(" ")}`);
+  // a shell on Windows, where cmake and ninja are .exe on PATH but emsdk tools are .bat
   execFileSync(cmd, args, { cwd: here, env, stdio: "inherit", shell: process.platform === "win32" });
 };
 const q = (s) => (process.platform === "win32" && /\s/.test(s) ? `"${s}"` : s);
@@ -53,6 +55,7 @@ run("cmake", [
   "-DCMAKE_BUILD_TYPE=Release",
   `-DSMLIB_EH=${eh}`,
   `-DSMLIB_OPT=${opt}`,
+  `-DSMLIB_DIST=${q(dist)}`,
 ]);
 run("cmake", ["--build", q(out), "--parallel"]);
-console.log(`built dist/smlib.mjs + dist/smlib.wasm (exceptions: ${eh}, ${opt}) in ${((Date.now() - t0) / 1000).toFixed(0)} s`);
+console.log(`built ${path.relative(here, dist)}/smlib.mjs + smlib.wasm (exceptions: ${eh}, ${opt}) in ${((Date.now() - t0) / 1000).toFixed(0)} s`);
