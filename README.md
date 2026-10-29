@@ -169,6 +169,74 @@ holds that memory until it is recycled. The 20 x 20 plate runs straight on
 the kernel because BREPcode's DSL overflows the JS call stack on 400 nested
 `difference()` calls before it reaches any kernel (that happens natively too).
 
+## Using it in your own project
+
+You need two files, `dist/smlib.mjs` (30 KB of glue) and `dist/smlib.wasm`
+(4.4 MB, 1.2 MB brotli), plus `src/api.mjs` if you want the handle-based
+API with thrown errors instead of raw embind calls. `dist/` is not committed;
+build it as above or take the pair from the latest GitHub release.
+
+### In Node
+
+```bash
+git clone https://github.com/RandoTechNerd/smlib-wasm.git
+```
+```bash
+node fetch-upstream.mjs && node build.mjs && node test/smoke.mjs
+```
+```js
+import loadSmlib from "./smlib-wasm/src/api.mjs";
+const nk = await loadSmlib();
+const box = nk.box(40, 30, 10);
+const hole = nk.cylinder(4, 20);
+nk.translate(hole, 20, 15, -5);
+nk.boolean(3, box, hole);                 // 1 union, 2 intersect, 3 subtract; result stays in `box`
+const mesh = nk.tessellate(box, 0.05, 8); // { positions, normals, indices, faceIds }
+nk.free(hole); nk.free(box);
+```
+
+### In a browser
+
+Load it in a Web Worker: the kernel is single threaded and a big boolean
+blocks for seconds, so keep it off the page thread. Copy the two `dist/`
+files next to your worker, or anywhere, and point `locateFile` at the wasm:
+
+```js
+// kernel.worker.js
+import loadSmlib from "./api.mjs";
+const nk = await loadSmlib({ locateFile: (f) => "/kernels/" + f }); // where smlib.wasm is served from
+self.onmessage = ({ data }) => { /* build with nk, post the tessellation back */ };
+```
+
+Serve `smlib.wasm` as `application/wasm` with brotli or gzip on, and cache it
+(it is immutable per release, so a long `Cache-Control` max-age is fine). It
+needs no SharedArrayBuffer, no COOP/COEP headers and no filesystem, so it runs
+on any static host. Memory starts at 32 MB and grows up to 4 GB; the heap
+never shrinks, so recycle the worker after a very heavy model if you care.
+
+### The API
+
+Solids are integer handles. Every function has the same name and arguments as
+BREPcode's native addon, `native/nvidia-kernel/src/addon.cc`, and each one is
+commented in `src/smlib_wasm.cc`, which is the reference for argument
+formats (sketch segments, the 4x4 placement matrix, fillet edge indices). The
+list: `info`, `free`, `count`, `copy`, `box`, `cylinder`, `cone`, `sphere`,
+`torus`, `torusArc`, `translate`, `rotate`, `scale`, `boolean`, `extrude`,
+`twistExtrude`, `revolve`, `fillet`, `faces`, `matchFaces`, `edges`, `bbox`,
+`volume`, `tessellate`, and `heapBytes`. `test/smoke.mjs` calls each one once
+and is the quickest worked example.
+
+What it does not do: read or write STEP or USD (that part of usd-brep is not
+compiled in), shell, sweep along a path, or run on more than one thread. Pull
+requests that add a kernel call to `src/smlib_wasm.cc` are welcome.
+
+### Licence terms when you ship it
+
+Apache-2.0 lets you use it in a commercial product. Keep the `LICENSE` and
+`THIRD_PARTY_NOTICES.md` files with any copy of the wasm you distribute, and
+do not use the NVIDIA name or logo to promote your product; "built on
+NVIDIA's open-source usd-brep (SMLib)" is fine.
+
 ## Licence
 
 Apache-2.0, see `LICENSE` and `THIRD_PARTY_NOTICES.md`.
